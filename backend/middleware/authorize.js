@@ -1,4 +1,4 @@
-const authorize = (role = [ 'shopOwner', 'deliveryPartner']) => {
+const authorize = (role = [ 'admin', 'deliveryPartner']) => {
     // roles param can be a single role string (e.g. 'admin') or an array of roles (e.g. ['admin', 'user'])
     if (typeof role === 'string') {
         role = [role];

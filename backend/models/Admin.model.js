@@ -27,15 +27,11 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true,
         default: "customer",
-        enum: ['user', 'admin', 'deliveryPartner']
-        
-    },
-    lat: { type: Number },
-    lon: { type: Number }
+        enum: ['customer', 'shopOwner', 'deliveryPartner']
+    }
 
 }, { timestamps: true })
 
 const User = mongoose.model("USER", userSchema)
 
 module.exports = { User }
-

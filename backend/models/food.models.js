@@ -27,7 +27,13 @@ const foodSchema = new Schema({
     imageUrl: {
         type: String,
         required: false
-    } // Optional
+    } ,// Optional
+
+    restaurantID: { // This field associates the food item with a specific restaurant or shop owner
+        type: Schema.Types.ObjectId,
+        ref: 'User', // Assuming restaurants are stored in the 'User' collection but with a specific role indicating they are restaurants
+        required: true
+      }
 
 }, { timestamps: true });
 
