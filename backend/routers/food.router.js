@@ -33,29 +33,99 @@ foodRouter.post('/createrestaurant', authenticate, async (req, res) => {
 });
 
 
+//.............route for handel isopen o r not ...........//
+foodRouter.patch('/restaurantstatus', async (req, res) => {
+  const restaurantId = '6602695b11b3c61fb23b6a80'; // Hardcoded restaurant ID, replace with actual ID if needed
+
+  try {
+      // Find the restaurant by ID
+      const restaurant = await Restaurant.findById(restaurantId);
+
+      // Check if the restaurant exists
+      if (!restaurant) {
+          return res.json({ error: "Restaurant not found." });
+      }
+
+      // Toggle the status of the restaurant
+      restaurant.isOpen = !restaurant.isOpen;
+
+      // Save the changes to the database
+      await restaurant.save();
+
+      res.json({ message: "Restaurant status toggled successfully.", isOpen: restaurant.isOpen });
+  } catch (error) {
+      res.json({ error: "Internal server error." });
+  }
+});
+
+//..................get api for reaturent ..........//
+foodRouter.get('/restaurants', async (req, res) => {
+  try {
+      // Retrieve all restaurant data from the database
+      const restaurants = await Restaurant.find();
+
+      res.json(restaurants);
+  } catch (error) {
+      res.json({ error: "Internal server error." });
+  }
+});
+
+// ........Route to edit restaurant data...............//
+
+foodRouter.patch('/editrestaurant', async (req, res) => {
+  const restaurantId = '6602695b11b3c61fb23b6a80'; // Hardcoded restaurant ID, replace with actual ID if needed
+
+  try {
+      // Find the restaurant by ID
+      const restaurant = await Restaurant.findById(restaurantId);
+
+      // Check if the restaurant exists
+      if (!restaurant) {
+          return res.json({ error: "Restaurant not found." });
+      }
+
+      // Update restaurant data with the new values from the request body
+      const { name, address, phoneNumber } = req.body;
+      restaurant.name = name;
+      restaurant.address = address;
+      restaurant.phoneNumber = phoneNumber;
+   
+
+      // Save the changes to the database
+      await restaurant.save();
+
+      res.json({ message: "Restaurant data updated successfully.", restaurant });
+  } catch (error) {
+      res.json({ error: "Internal server error." });
+  }
+});
+
+
 // POST route to create a new food item
 
 foodRouter.post('/createfood', authenticate, authorize("admin"),async (req, res) => {
   if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: "Unauthorized: Only restaurants Owner can add food items." });
+      return res.json({ error: "Unauthorized: Only restaurants Owner can add food items." });
   }
 
-  const { name, description, price, category, imageUrl } = req.body;
+  const { name, description, price, category, imageUrl, foodType ,available} = req.body;
 
   try {
       const newFood = new Food({
           name,
           description,
           price,
+          foodType,
           category,
           imageUrl,
+          available,
           restaurantID: req.user._id // Automatically use the authenticated user's ID
       });
 
       await newFood.save();
-      res.status(201).json(newFood);
+      res.json(newFood);
   } catch (error) {
-      res.status(400).json({ error: error.message });
+      res.json({ error: error.message });
   }
 });
 
@@ -72,10 +142,35 @@ foodRouter.put('/updatefood:id', authenticate, authorize("admin"), async (req, r
     if (food) {
       res.json(food);
     } else {
-      res.status(404).json({ message: 'Food not found' });
+      res.json({msg: 'Food not found' });
     }
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.json({ error: error.message });
+  }
+});
+
+
+//.......................edit food  avlabal or not .............//
+foodRouter.patch('/foodavailability/:foodId', async (req, res) => {
+  const { foodId } = req.params;
+  const { available } = req.body;
+
+  try {
+      // Find the food item by ID
+      const food = await Food.findById(foodId);
+
+      // Check if the food item exists
+      if (!food) {
+          return res.json({ msg: "Food item not found." });
+      }
+
+      // Update the availability of the food item
+      food.available = available;
+      await food.save();
+
+      res.json({ message: "Food availability updated successfully." });
+  } catch (error) {
+      res.json({ error: "Internal server error." });
   }
 });
 
@@ -86,12 +181,12 @@ foodRouter.delete('/deletefood:id', authenticate, authorize("admin"), async (req
   try {
     const food = await Food.findByIdAndDelete(req.params.id);
     if (food) {
-      res.status(204).send(); // No content to send back
+      res.send(); // No content to send back
     } else {
-      res.status(404).json({ message: 'Food not found' });
+      res.json({ message: 'Food not found' });
     }
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.json({ error: error.message });
   }
 });
 
@@ -103,10 +198,10 @@ foodRouter.get('/findfood:id', authenticate, async (req, res) => {
     if (food) {
       res.json(food);
     } else {
-      res.status(404).json({ message: 'Food not found' });
+      res.json({ message: 'Food not found' });
     }
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.json({ error: error.message });
   }
 });
 
@@ -117,7 +212,7 @@ foodRouter.get('/allfood', async (req, res) => {
     const foods = await Food.find();
     res.json(foods);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.json({ error: error.message });
   }
 });
 

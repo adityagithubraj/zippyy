@@ -43,14 +43,14 @@ userRouter.post("/signup", async (req, res) => {
     const { name, number, email, password, role, address } = req.body;
 
     if (!name || !number || !email || !password || !role || !address) {
-        return res.status(422).json({ error: "Please fill in all the fields" });
+        return res.json({ msg: "Please fill in all the fields" });
     }
 
     try {
         const existingUser = await User.findOne({ email: email });
 
         if (existingUser) {
-            return res.status(422).json({ error: "User already exists with the same email. Please sign in." });
+            return res.json({ msg:"User already exists with the same email. Please sign in."});
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -70,10 +70,10 @@ userRouter.post("/signup", async (req, res) => {
         });
 
         await user.save();
-        res.status(201).json({ msg: "Signup successful" });
+        res.json({ msg: "Signup successful" });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ msg: "Something went wrong", error });
+        res.json({ msg: "Something went wrong", error });
     }
 });
 
@@ -129,75 +129,175 @@ userRouter.post("/signup", async (req, res) => {
 
 
 //.........new singin......................//
+// userRouter.post("/signin", async (req, res) => {
+//     // Step 1: Extract user data from body
+//     const { email, password ,role } = req.body;
+
+//     // Step 2: Check if all fields are required
+//     if (!email || !password) {
+//         return res.json({msg: "Please fill in all the fields" });
+//     }
+
+//     try {
+//         // Step 3: Check if the email exists in the database
+//         const existingUser = await User.findOne({ email: email });
+
+//         if (!existingUser) {
+//             return res.json({ msg: "Invalid email" });
+//         }
+
+//         // Step 4: Compare passwords
+//         const match = await bcrypt.compare(password, existingUser.password);
+
+//         if (!match) {
+//             return res.json({ msg: "Invalid password" });
+//         }
+
+//         // Step 5: Generate and sign a JWT
+//         const token = jwt.sign({ _id: existingUser._id }, jwtkey);
+
+//         // Step 6: Set token in cookies
+//         res.cookie('token', token, { maxAge: 86400000, httpOnly: true });
+
+//         // Step 7: Return success response with the token and user profile
+//         const user = await User.findById(existingUser._id).select("-password");
+//         const username = user.name
+//         return res.json({ msg: "Signin successful", token, user });
+
+//     } catch (error) {
+//         console.error(error);
+//         return res.json({ msg: "Something went wrong", err: error });
+//     }
+// });
+
+
+//........singin 2................//
 userRouter.post("/signin", async (req, res) => {
     // Step 1: Extract user data from body
-    const { email, password } = req.body;
+    const { email, password, role } = req.body;
 
     // Step 2: Check if all fields are required
     if (!email || !password) {
-        return res.status(422).json({ error: "Please fill in all the fields" });
+        return res.json({ error: "Please fill in all the fields" });
     }
 
     try {
         // Step 3: Check if the email exists in the database
-        const existingUser = await User.findOne({ email: email });
+        const existingUser = await User.findOne({ email });
 
         if (!existingUser) {
-            return res.status(422).json({ error: "Invalid email" });
+            return res.json({ msg: "Invalid email or password" });
         }
 
         // Step 4: Compare passwords
         const match = await bcrypt.compare(password, existingUser.password);
 
         if (!match) {
-            return res.status(422).json({ error: "Invalid password" });
+            return res.json({ msg: "Invalid email or password" });
         }
 
-        // Step 5: Generate and sign a JWT
+        // Step 5: Check if the role matches
+        if (existingUser.role !== role) {
+            return res.json({ msg: "Access denied: Invalid role" });
+        }
+
+        // Step 6: Generate and sign a JWT
         const token = jwt.sign({ _id: existingUser._id }, jwtkey);
 
-        // Step 6: Set token in cookies
+        // Step 7: Set token in cookies
         res.cookie('token', token, { maxAge: 86400000, httpOnly: true });
 
-        // Step 7: Return success response with the token and user profile
+        // Step 8: Return success response with the token and user profile
         const user = await User.findById(existingUser._id).select("-password");
-        const username = user.name
-        return res.status(200).json({ message: "Signin successful", token, username });
+        return res.json({ msg: "Sign-in successful", token, user });
 
     } catch (error) {
         console.error(error);
-        return res.status(500).json({ error: "Something went wrong", err: error });
+        return res.json({ error: "Internal server error" });
     }
 });
-
 //.................. Logout route...................//
-userRouter.post("/logout", async (req, res) => {
-    try {
-        // Clear the token cookie by setting it to an empty string and setting its expiry to a past date
-        res.cookie('token', '', { expires: new Date(0), httpOnly: true });
-        res.status(200).json({ message: "Logout successful" });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Something went wrong", err: error });
-    }
-});
+// userRouter.post("/logout", async (req, res) => {
+//     try {
+//         // Clear the token cookie by setting it to an empty string and setting its expiry to a past date
+//         res.cookie('token', '', { expires: new Date(0), httpOnly: true });
+//         res.status(200).json({ message: "Logout successful" });
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).json({ error: "Something went wrong", err: error });
+//     }
+// });
 
 
 
 //..............profile route...............//
 
-userRouter.get("/profile",authenticate, async (req, res) => {
+
+
+
+//...........get Admin profile ...........//
+// Route to get the profile of an admin user
+userRouter.get("/adminprofile", authenticate, async (req, res) => {
     try {
-        const user = await User.findById(req.user._id).select("-password");
-        if (!user) {
-            return res.status(404).json({ error: "User not found" });
+        // Ensure the user is authenticated
+        if (!req.user) {
+            return res.json({ error: "Unauthorized" });
         }
-        res.status(200).json({ user });
+
+        // Retrieve the profile of the authenticated user
+        const user = await User.findById(req.user._id).select("-password");
+
+        // Check if the user exists
+        if (!user) {
+            return res.json({ error: "User not found" });
+        }
+
+        res.json({ user });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: "Something went wrong", err: error });
+        res.json({ error: "Something went wrong", err: error });
     }
 });
+
+//..........edit userdata................//
+userRouter.patch("/editprofile", authenticate, async (req, res) => {
+    try {
+        // Ensure the user is authenticated
+        if (!req.user) {
+            return res.json({ error: "Unauthorized" });
+        }
+
+        // Retrieve the profile of the authenticated user
+        const user = await User.findById(req.user._id);
+
+        // Check if the user exists
+        if (!user) {
+            return res.json({ error: "User not found" });
+        }
+
+        // Update user profile data based on the request body
+        const { name, email, number, newPassword } = req.body;
+        user.name = name;
+        user.email = email;
+        user.number = number;
+
+        // Check if the user wants to update the password
+        if (newPassword) {
+            // Hash the new password
+            const hashedPassword = await bcrypt.hash(newPassword, 10);
+            user.password = hashedPassword;
+        }
+
+        // Save the changes to the database
+        await user.save();
+
+        res.json({ message: "Profile updated successfully", user });
+    } catch (error) {
+        console.error(error);
+        res.json({ error: "Something went wrong", err: error });
+    }
+});
+
 
 module.exports = { userRouter };
 

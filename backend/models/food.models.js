@@ -19,9 +19,14 @@ const foodSchema = new Schema({
         required: true
     },
 
+    foodType: {
+        type: String,
+        required: true
+    },
+
     category: {
         type: String,
-        required: true, enum: ['vase', 'non-vase']
+        required: true,
     },
 
     imageUrl: {
@@ -33,7 +38,13 @@ const foodSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'User', // Assuming restaurants are stored in the 'User' collection but with a specific role indicating they are restaurants
         required: true
-      }
+      },
+
+      available: {
+        type: Boolean,
+        required: false,
+        default: true // Assuming by default it's available
+    }
 
 }, { timestamps: true });
 
