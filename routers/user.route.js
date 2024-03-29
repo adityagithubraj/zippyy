@@ -186,14 +186,14 @@ userRouter.post("/signin", async (req, res) => {
         const existingUser = await User.findOne({ email });
 
         if (!existingUser) {
-            return res.json({ msg: "Invalid email or password" });
+            return res.json({ msg: "Invalid email" });
         }
 
         // Step 4: Compare passwords
         const match = await bcrypt.compare(password, existingUser.password);
 
         if (!match) {
-            return res.json({ msg: "Invalid email or password" });
+            return res.json({ msg: "Invalid password" });
         }
 
         // Step 5: Check if the role matches
@@ -216,28 +216,10 @@ userRouter.post("/signin", async (req, res) => {
         return res.json({ error: "Internal server error" });
     }
 });
-//.................. Logout route...................//
-// userRouter.post("/logout", async (req, res) => {
-//     try {
-//         // Clear the token cookie by setting it to an empty string and setting its expiry to a past date
-//         res.cookie('token', '', { expires: new Date(0), httpOnly: true });
-//         res.status(200).json({ message: "Logout successful" });
-//     } catch (error) {
-//         console.error(error);
-//         res.status(500).json({ error: "Something went wrong", err: error });
-//     }
-// });
 
 
-
-//..............profile route...............//
-
-
-
-
-//...........get Admin profile ...........//
 // Route to get the profile of an admin user
-userRouter.get("/adminprofile", authenticate, async (req, res) => {
+userRouter.get("/getprofile", authenticate, async (req, res) => {
     try {
         // Ensure the user is authenticated
         if (!req.user) {
@@ -276,10 +258,10 @@ userRouter.patch("/editprofile", authenticate, async (req, res) => {
         }
 
         // Update user profile data based on the request body
-        const { name, email, number, newPassword } = req.body;
+        const { name, number, newPassword ,profilePic} = req.body;
         user.name = name;
-        user.email = email;
         user.number = number;
+        user.profilePic = profilePic
 
         // Check if the user wants to update the password
         if (newPassword) {
@@ -291,10 +273,13 @@ userRouter.patch("/editprofile", authenticate, async (req, res) => {
         // Save the changes to the database
         await user.save();
 
-        res.json({ message: "Profile updated successfully", user });
+        // Omit the password field from the response
+        const updatedUser = { ...user.toObject(), password: undefined };
+
+        return res.json({ message: "Profile updated successfully", user: updatedUser });
     } catch (error) {
         console.error(error);
-        res.json({ error: "Something went wrong", err: error });
+        return resizeTo.json({ error: "Something went wrong", err: error });
     }
 });
 

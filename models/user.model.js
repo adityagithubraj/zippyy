@@ -30,6 +30,12 @@ const userSchema = new mongoose.Schema({
         enum: ['user', 'admin', 'deliveryPartner']
         
     },
+    profilePic: {
+        type: String,
+        required: false,
+        default: "https://png.pngtree.com/png-vector/20220817/ourmid/pngtree-cartoon-man-avatar-vector-ilustration-png-image_6111064.png"
+    },
+    
     lat: { type: Number },
     lon: { type: Number }
 
