@@ -15,7 +15,7 @@ app.use(cors());
 
 require("dotenv").config();
 
-const PORT =process.env.PORT || 2000;
+const PORT =process.env.PORT ;
 
 app.get("/",(req,res)=>{
 res.json("hello zippyy......")
